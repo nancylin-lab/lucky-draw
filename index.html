@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>抽籤工具</title>
+<title>測試宇宙偏心程度</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh;padding:24px 16px}
 .wrap{max-width:680px;margin:0 auto}
-h1{font-size:20px;font-weight:500;margin-bottom:20px;color:#1a1a1a}
+.title{font-size:20px;font-weight:500;color:#1a1a1a;margin-bottom:2px}
+.subtitle{font-size:13px;color:#F06857;margin-bottom:20px}
 .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
 .tab{padding:7px 18px;font-size:14px;border:1px solid #ccc;border-radius:8px;cursor:pointer;background:#fff;color:#666;transition:all .15s}
 .tab.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
@@ -30,7 +31,6 @@ button.go:active{transform:scale(.98)}
 .result-empty{font-size:15px;color:#bbb}
 .chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
 .chip{padding:6px 14px;border-radius:8px;font-size:14px;border:1px solid #e5e5e5;background:#fff;color:#444}
-.chip.win{background:#f0faf4;border-color:#7dd4a8;color:#1a6b3c}
 .segrow{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
 .seg{padding:5px 16px;font-size:13px;border:1px solid #ddd;border-radius:100px;cursor:pointer;color:#666;background:#fff}
 .seg.on{border-color:#1a1a1a;color:#1a1a1a;font-weight:500}
@@ -38,7 +38,7 @@ canvas{display:block;margin:16px auto 0}
 .spin-btn{display:block;margin:12px auto 0;padding:9px 32px;font-size:14px;font-weight:500;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer}
 .spin-btn:hover{background:#f5f5f3}
 .assign-row{padding:7px 12px;background:#fafafa;border:1px solid #e5e5e5;border-radius:8px;font-size:14px;display:flex;align-items:center;gap:8px}
-.assign-name{color:#666;min-width:48px}
+.assign-name{color:#666}
 .assign-arrow{color:#ccc}
 .assign-task{font-weight:500;color:#1a1a1a}
 .group-block{margin-bottom:14px}
@@ -47,7 +47,9 @@ canvas{display:block;margin:16px auto 0}
 </head>
 <body>
 <div class="wrap">
-  <h1>抽籤工具</h1>
+  <div class="title">測試宇宙偏心程度</div>
+  <div class="subtitle">NG出品 • 必屬佳作</div>
+
   <div class="tabs">
     <div class="tab active" onclick="switchTab('task')">任務</div>
     <div class="tab" onclick="switchTab('number')">數字</div>
@@ -144,7 +146,10 @@ canvas{display:block;margin:16px auto 0}
       <input type="number" id="wheel-dirs" min="2" max="12" value="4" oninput="drawWheel();updateWheelPlaceholder()">
       <div class="label">區塊標籤（選填，逗號分隔）</div>
       <input type="text" id="wheel-labels" placeholder="第一區,第二區,第三區,第四區" oninput="drawWheel()">
-      <canvas id="wheelCanvas" width="260" height="260"></canvas>
+      <div style="position:relative;width:260px;margin:16px auto 0">
+        <canvas id="wheelCanvas" width="260" height="260"></canvas>
+        <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-top:22px solid #1a1a1a;z-index:10"></div>
+      </div>
       <button class="spin-btn" onclick="spinWheel()">旋轉</button>
     </div>
     <div class="result-box">
@@ -157,6 +162,7 @@ canvas{display:block;margin:16px auto 0}
 <script>
 let taskMode='single', numMode='vs';
 const NUM_ZH=['一','二','三','四','五','六','七','八','九','十','十一','十二','十三','十四','十五','十六','十七','十八','十九','二十'];
+const RANK_ICON=['🥇','🥈','🥉'];
 
 function switchTab(t){
   const keys=['task','number','order','wheel'];
@@ -165,7 +171,6 @@ function switchTab(t){
   document.getElementById('p-'+t).classList.add('active');
   if(t==='wheel') drawWheel();
 }
-
 function setTaskMode(m){
   taskMode=m;
   document.getElementById('seg-single').classList.toggle('on',m==='single');
@@ -173,7 +178,6 @@ function setTaskMode(m){
   document.getElementById('task-single').style.display=m==='single'?'block':'none';
   document.getElementById('task-group').style.display=m==='group'?'block':'none';
 }
-
 function setNumMode(m){
   numMode=m;
   document.getElementById('seg-vs').classList.toggle('on',m==='vs');
@@ -181,27 +185,22 @@ function setNumMode(m){
   document.getElementById('num-vs').style.display=m==='vs'?'block':'none';
   document.getElementById('num-amt').style.display=m==='amt'?'block':'none';
 }
-
 function updateGroupPlaceholder(){
   const n=Math.max(2,Math.min(20,parseInt(document.getElementById('group-count').value)||2));
   document.getElementById('group-labels').placeholder=Array.from({length:n},(_,i)=>`第${NUM_ZH[i]}組`).join(',');
 }
-
 function updateWheelPlaceholder(){
   const n=Math.max(2,Math.min(12,parseInt(document.getElementById('wheel-dirs').value)||4));
   document.getElementById('wheel-labels').placeholder=Array.from({length:n},(_,i)=>`第${NUM_ZH[i]}區`).join(',');
 }
-
 function parseLines(id){
   return document.getElementById(id).value.split('\n').map(s=>s.trim()).filter(Boolean);
 }
-
 function shuffle(arr){
   let a=[...arr];
   for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
   return a;
 }
-
 function runTask(){
   const box=document.getElementById('res-task-text');
   if(taskMode==='single'){
@@ -233,7 +232,6 @@ function runTask(){
     box.innerHTML=html||'<span class="result-empty">人數不足</span>';
   }
 }
-
 function runNumber(){
   const box=document.getElementById('res-number-text');
   if(numMode==='vs'){
@@ -252,11 +250,10 @@ function runNumber(){
       pool=names.map(()=>Math.floor(Math.random()*(max-min+1))+min);
     }
     const results=names.map((n,i)=>({name:n,val:pool[i]})).sort((a,b)=>b.val-a.val);
-    const top=results[0].val;
-    let html='<div class="chip-row">';
+    let html='<div style="display:flex;flex-direction:column;gap:6px">';
     results.forEach((r,i)=>{
-      const isWin=r.val===top;
-      html+=`<div class="chip${isWin?' win':''}">${r.name} <strong style="font-weight:500">${r.val}</strong>${i===0?' 👑':''}</div>`;
+      const icon=RANK_ICON[i]||`${i+1}.`;
+      html+=`<div style="padding:6px 14px;border-radius:8px;font-size:14px;border:1px solid #e5e5e5;background:#fff;display:flex;align-items:center;gap:10px"><span style="font-size:18px;line-height:1">${icon}</span><span style="color:#666">${r.name}</span><strong style="font-weight:500;margin-left:auto">${r.val}</strong></div>`;
     });
     box.innerHTML=html+'</div>';
   } else {
@@ -272,7 +269,6 @@ function runNumber(){
     box.innerHTML=html+'</div>';
   }
 }
-
 function runOrder(){
   const names=parseLines('order-names');
   const box=document.getElementById('res-order-text');
@@ -280,7 +276,8 @@ function runOrder(){
   const shuffled=shuffle(names);
   let html='<div style="display:flex;flex-direction:column;gap:6px">';
   shuffled.forEach((n,i)=>{
-    html+=`<div class="assign-row"><span class="assign-name" style="color:#aaa;min-width:36px">第 ${i+1}</span><span class="assign-task">${n}</span></div>`;
+    const icon=RANK_ICON[i]||`${i+1}.`;
+    html+=`<div style="padding:6px 12px;background:#fff;border:1px solid #e5e5e5;border-radius:8px;font-size:14px;display:flex;align-items:center;gap:10px"><span style="font-size:18px;line-height:1">${icon}</span><strong style="font-weight:500">${n}</strong></div>`;
   });
   box.innerHTML=html+'</div>';
 }
@@ -288,48 +285,54 @@ function runOrder(){
 const RAMP=['#7F77DD','#1D9E75','#D85A30','#378ADD','#D4537E','#BA7517','#639922','#E24B4A','#888780','#534AB7','#0F6E56','#993C1D'];
 let wheelAngle=0, spinning=false;
 
-function drawWheel(extraAngle){
+function getN(){return Math.max(2,Math.min(12,parseInt(document.getElementById('wheel-dirs').value)||4));}
+function getLabels(){
+  const raw=document.getElementById('wheel-labels').value;
+  return raw?raw.split(',').map(s=>s.trim()):[];
+}
+function drawWheel(currentAngle){
   const canvas=document.getElementById('wheelCanvas');
   if(!canvas)return;
   const ctx=canvas.getContext('2d');
-  const n=Math.max(2,Math.min(12,parseInt(document.getElementById('wheel-dirs').value)||4));
-  const rawLabels=document.getElementById('wheel-labels').value;
-  const labels=rawLabels?rawLabels.split(',').map(s=>s.trim()):[];
-  const cx=130,cy=130,r=110;
+  const n=getN();
+  const labels=getLabels();
+  const cx=130,cy=130,r=108;
+  const angle=currentAngle!==undefined?currentAngle:wheelAngle;
   ctx.clearRect(0,0,260,260);
-  const rot=extraAngle!==undefined?extraAngle:wheelAngle;
   for(let i=0;i<n;i++){
-    const start=rot+i*(2*Math.PI/n)-Math.PI/2;
-    const end=start+2*Math.PI/n;
+    const sliceAngle=2*Math.PI/n;
+    const start=angle+i*sliceAngle-Math.PI/2;
+    const end=start+sliceAngle;
     ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,end);ctx.closePath();
     ctx.fillStyle=RAMP[i%RAMP.length];ctx.fill();
     ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
-    const mid=start+(end-start)/2;
+    const mid=start+sliceAngle/2;
     ctx.fillStyle='#fff';ctx.font='500 13px -apple-system,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillText(labels[i]||(i+1),cx+Math.cos(mid)*(r*0.65),cy+Math.sin(mid)*(r*0.65));
   }
   ctx.beginPath();ctx.arc(cx,cy,14,0,2*Math.PI);ctx.fillStyle='#fff';ctx.fill();
   ctx.strokeStyle='#ddd';ctx.lineWidth=1;ctx.stroke();
-  ctx.beginPath();ctx.moveTo(cx,10);ctx.lineTo(cx-8,26);ctx.lineTo(cx+8,26);ctx.closePath();
-  ctx.fillStyle='#1a1a1a';ctx.fill();
 }
-
 function spinWheel(){
   if(spinning)return;
   spinning=true;
-  const n=Math.max(2,Math.min(12,parseInt(document.getElementById('wheel-dirs').value)||4));
-  const rawLabels=document.getElementById('wheel-labels').value;
-  const labels=rawLabels?rawLabels.split(',').map(s=>s.trim()):[];
-  const totalRot=Math.PI*2*8+Math.random()*Math.PI*2;
-  const dur=3000,start=performance.now(),startAngle=wheelAngle;
+  const n=getN();
+  const labels=getLabels();
+  const extraRot=Math.PI*2*(6+Math.floor(Math.random()*4));
+  const targetOffset=Math.random()*Math.PI*2;
+  const totalRot=extraRot+targetOffset;
+  const dur=3500,start=performance.now(),startAngle=wheelAngle;
   function frame(now){
     const t=Math.min((now-start)/dur,1);
-    drawWheel(startAngle+totalRot*(1-Math.pow(1-t,4)));
+    const ease=1-Math.pow(1-t,4);
+    drawWheel(startAngle+totalRot*ease);
     if(t<1){requestAnimationFrame(frame);}
     else{
-      wheelAngle=(startAngle+totalRot)%(2*Math.PI);
+      wheelAngle=((startAngle+totalRot)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
       spinning=false;
-      const idx=Math.floor(((-wheelAngle+Math.PI/2+2*Math.PI)%(2*Math.PI))/(2*Math.PI/n))%n;
+      const sliceAngle=2*Math.PI/n;
+      const normalised=((-(wheelAngle)%(Math.PI*2))+Math.PI*2)%(Math.PI*2);
+      const idx=Math.floor(normalised/sliceAngle)%n;
       document.getElementById('res-wheel-text').innerHTML=`<span style="font-size:22px;font-weight:500">→ ${labels[idx]||(idx+1)}</span>`;
     }
   }
