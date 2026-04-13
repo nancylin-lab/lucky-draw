@@ -18,6 +18,7 @@ h1{font-size:20px;font-weight:500;margin-bottom:20px;color:#1a1a1a}
 .label:first-child{margin-top:0}
 input[type=text],textarea,input[type=number]{width:100%;padding:8px 10px;font-size:14px;border:1px solid #ddd;border-radius:8px;background:#fafafa;color:#1a1a1a;outline:none;font-family:inherit}
 input[type=text]:focus,textarea:focus,input[type=number]:focus{border-color:#999;background:#fff}
+input[type=text]::placeholder,textarea::placeholder{color:#d9d9d9}
 textarea{resize:vertical;min-height:90px;line-height:1.7}
 .row{display:flex;gap:12px;flex-wrap:wrap}
 .row>*{flex:1;min-width:120px}
@@ -38,6 +39,7 @@ canvas{display:block;margin:16px auto 0}
 .spin-btn:hover{background:#f5f5f3}
 .assign-row{padding:7px 12px;background:#fafafa;border:1px solid #e5e5e5;border-radius:8px;font-size:14px;display:flex;align-items:center;gap:8px}
 .assign-name{color:#666;min-width:48px}
+.assign-arrow{color:#ccc}
 .assign-task{font-weight:500;color:#1a1a1a}
 .group-block{margin-bottom:14px}
 .group-title{font-size:13px;font-weight:500;color:#666;margin-bottom:6px}
@@ -72,11 +74,11 @@ canvas{display:block;margin:16px auto 0}
         <div class="row" style="margin-top:12px">
           <div>
             <div class="label">組數</div>
-            <input type="number" id="group-count" min="2" max="20" value="2">
+            <input type="number" id="group-count" min="2" max="20" value="2" oninput="updateGroupPlaceholder()">
           </div>
           <div>
             <div class="label">組名（選填，逗號分隔）</div>
-            <input type="text" id="group-labels" placeholder="表單組,訂餐組,拿餐組">
+            <input type="text" id="group-labels" placeholder="第一組,第二組">
           </div>
         </div>
       </div>
@@ -99,14 +101,8 @@ canvas{display:block;margin:16px auto 0}
         <div class="label">參與者（每行一名）</div>
         <textarea id="vs-names" placeholder="小明&#10;小華&#10;小美"></textarea>
         <div class="row" style="margin-top:12px">
-          <div>
-            <div class="label">最小值</div>
-            <input type="number" id="vs-min" value="1">
-          </div>
-          <div>
-            <div class="label">最大值</div>
-            <input type="number" id="vs-max" value="100">
-          </div>
+          <div><div class="label">最小值</div><input type="number" id="vs-min" value="1"></div>
+          <div><div class="label">最大值</div><input type="number" id="vs-max" value="100"></div>
         </div>
         <div style="margin-top:10px">
           <label style="font-size:13px;color:#666;display:flex;align-items:center;gap:8px;cursor:pointer">
@@ -145,9 +141,9 @@ canvas{display:block;margin:16px auto 0}
   <div class="panel" id="p-wheel">
     <div class="card">
       <div class="label" style="margin-top:0">方向數（2–12）</div>
-      <input type="number" id="wheel-dirs" min="2" max="12" value="4" oninput="drawWheel()">
+      <input type="number" id="wheel-dirs" min="2" max="12" value="4" oninput="drawWheel();updateWheelPlaceholder()">
       <div class="label">區塊標籤（選填，逗號分隔）</div>
-      <input type="text" id="wheel-labels" placeholder="東,西,南,北" oninput="drawWheel()">
+      <input type="text" id="wheel-labels" placeholder="第一區,第二區,第三區,第四區" oninput="drawWheel()">
       <canvas id="wheelCanvas" width="260" height="260"></canvas>
       <button class="spin-btn" onclick="spinWheel()">旋轉</button>
     </div>
@@ -160,6 +156,7 @@ canvas{display:block;margin:16px auto 0}
 
 <script>
 let taskMode='single', numMode='vs';
+const NUM_ZH=['一','二','三','四','五','六','七','八','九','十','十一','十二','十三','十四','十五','十六','十七','十八','十九','二十'];
 
 function switchTab(t){
   const keys=['task','number','order','wheel'];
@@ -185,6 +182,16 @@ function setNumMode(m){
   document.getElementById('num-amt').style.display=m==='amt'?'block':'none';
 }
 
+function updateGroupPlaceholder(){
+  const n=Math.max(2,Math.min(20,parseInt(document.getElementById('group-count').value)||2));
+  document.getElementById('group-labels').placeholder=Array.from({length:n},(_,i)=>`第${NUM_ZH[i]}組`).join(',');
+}
+
+function updateWheelPlaceholder(){
+  const n=Math.max(2,Math.min(12,parseInt(document.getElementById('wheel-dirs').value)||4));
+  document.getElementById('wheel-labels').placeholder=Array.from({length:n},(_,i)=>`第${NUM_ZH[i]}區`).join(',');
+}
+
 function parseLines(id){
   return document.getElementById(id).value.split('\n').map(s=>s.trim()).filter(Boolean);
 }
@@ -201,14 +208,12 @@ function runTask(){
     const tasks=parseLines('task-list');
     const names=parseLines('task-names');
     if(!tasks.length||!names.length){box.innerHTML='<span class="result-empty">請填寫任務與參與者</span>';return;}
-    const shuffledTasks=shuffle(tasks);
+    const st=shuffle(tasks);
     let html='<div style="display:flex;flex-direction:column;gap:6px">';
     names.forEach((n,i)=>{
-      const task=shuffledTasks[i%shuffledTasks.length];
-      html+=`<div class="assign-row"><span class="assign-name">${n}</span><span style="color:#bbb;padding:0 4px">→</span><span class="assign-task">${task}</span></div>`;
+      html+=`<div class="assign-row"><span class="assign-name">${n}</span><span class="assign-arrow">→</span><span class="assign-task">${st[i%st.length]}</span></div>`;
     });
-    html+='</div>';
-    box.innerHTML=html;
+    box.innerHTML=html+'</div>';
   } else {
     const names=parseLines('group-names');
     const count=parseInt(document.getElementById('group-count').value)||2;
@@ -220,7 +225,7 @@ function runTask(){
     shuffled.forEach((n,i)=>groups[i%count].push(n));
     let html='';
     groups.forEach((g,i)=>{
-      const label=labels[i]||`第${i+1}組`;
+      const label=labels[i]||`第${NUM_ZH[i]}組`;
       html+=`<div class="group-block"><div class="group-title">${label}</div><div class="chip-row">`;
       g.forEach(n=>{html+=`<div class="chip">${n}</div>`;});
       html+='</div></div>';
@@ -251,10 +256,9 @@ function runNumber(){
     let html='<div class="chip-row">';
     results.forEach((r,i)=>{
       const isWin=r.val===top;
-      html+=`<div class="chip${isWin?' win':''}">${r.name} <strong>${r.val}</strong>${i===0?' 👑':''}</div>`;
+      html+=`<div class="chip${isWin?' win':''}">${r.name} <strong style="font-weight:500">${r.val}</strong>${i===0?' 👑':''}</div>`;
     });
-    html+='</div>';
-    box.innerHTML=html;
+    box.innerHTML=html+'</div>';
   } else {
     const total=parseFloat(document.getElementById('amt-total').value)||0;
     const names=parseLines('amt-names');
@@ -263,11 +267,9 @@ function runNumber(){
     const fracs=[...cuts,1].map((v,i,a)=>v-(i?a[i-1]:0));
     let html='<div style="display:flex;flex-direction:column;gap:6px">';
     names.forEach((n,i)=>{
-      const amt=Math.round(fracs[i]*total);
-      html+=`<div class="assign-row"><span class="assign-name">${n}</span><span style="color:#bbb;padding:0 4px">→</span><span class="assign-task">${amt.toLocaleString()}</span></div>`;
+      html+=`<div class="assign-row"><span class="assign-name">${n}</span><span class="assign-arrow">→</span><span class="assign-task">${Math.round(fracs[i]*total).toLocaleString()}</span></div>`;
     });
-    html+='</div>';
-    box.innerHTML=html;
+    box.innerHTML=html+'</div>';
   }
 }
 
@@ -280,8 +282,7 @@ function runOrder(){
   shuffled.forEach((n,i)=>{
     html+=`<div class="assign-row"><span class="assign-name" style="color:#aaa;min-width:36px">第 ${i+1}</span><span class="assign-task">${n}</span></div>`;
   });
-  html+='</div>';
-  box.innerHTML=html;
+  box.innerHTML=html+'</div>';
 }
 
 const RAMP=['#7F77DD','#1D9E75','#D85A30','#378ADD','#D4537E','#BA7517','#639922','#E24B4A','#888780','#534AB7','#0F6E56','#993C1D'];
@@ -320,13 +321,10 @@ function spinWheel(){
   const rawLabels=document.getElementById('wheel-labels').value;
   const labels=rawLabels?rawLabels.split(',').map(s=>s.trim()):[];
   const totalRot=Math.PI*2*8+Math.random()*Math.PI*2;
-  const dur=3000;
-  const start=performance.now();
-  const startAngle=wheelAngle;
+  const dur=3000,start=performance.now(),startAngle=wheelAngle;
   function frame(now){
     const t=Math.min((now-start)/dur,1);
-    const ease=1-Math.pow(1-t,4);
-    drawWheel(startAngle+totalRot*ease);
+    drawWheel(startAngle+totalRot*(1-Math.pow(1-t,4)));
     if(t<1){requestAnimationFrame(frame);}
     else{
       wheelAngle=(startAngle+totalRot)%(2*Math.PI);
@@ -338,7 +336,11 @@ function spinWheel(){
   requestAnimationFrame(frame);
 }
 
-window.addEventListener('load',()=>{if(document.getElementById('wheelCanvas'))drawWheel();});
+window.addEventListener('load',()=>{
+  updateGroupPlaceholder();
+  updateWheelPlaceholder();
+  drawWheel();
+});
 </script>
 </body>
 </html>
