@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>抽籤工具</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh;padding:24px 16px}
+.wrap{max-width:680px;margin:0 auto}
+h1{font-size:20px;font-weight:500;margin-bottom:20px;color:#1a1a1a}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.tab{padding:7px 18px;font-size:14px;border:1px solid #ccc;border-radius:8px;cursor:pointer;background:#fff;color:#666;transition:all .15s}
+.tab.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.panel{display:none}.panel.active{display:block}
+.card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:20px;margin-bottom:12px}
+.label{font-size:13px;color:#666;margin-bottom:6px;margin-top:12px}
+.label:first-child{margin-top:0}
+input[type=text],textarea,input[type=number]{width:100%;padding:8px 10px;font-size:14px;border:1px solid #ddd;border-radius:8px;background:#fafafa;color:#1a1a1a;outline:none;font-family:inherit}
+input[type=text]:focus,textarea:focus,input[type=number]:focus{border-color:#999;background:#fff}
+textarea{resize:vertical;min-height:90px;line-height:1.7}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.row>*{flex:1;min-width:120px}
+button.go{width:100%;padding:11px;font-size:15px;font-weight:500;border:none;border-radius:8px;background:#1a1a1a;color:#fff;cursor:pointer;margin-top:14px}
+button.go:hover{background:#333}
+button.go:active{transform:scale(.98)}
+.result-box{background:#fafafa;border:1px solid #e5e5e5;border-radius:12px;padding:20px;margin-top:12px;min-height:64px}
+.result-label{font-size:12px;color:#aaa;margin-bottom:8px}
+.result-empty{font-size:15px;color:#bbb}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.chip{padding:6px 14px;border-radius:8px;font-size:14px;border:1px solid #e5e5e5;background:#fff;color:#444}
+.chip.win{background:#f0faf4;border-color:#7dd4a8;color:#1a6b3c}
+.segrow{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.seg{padding:5px 16px;font-size:13px;border:1px solid #ddd;border-radius:100px;cursor:pointer;color:#666;background:#fff}
+.seg.on{border-color:#1a1a1a;color:#1a1a1a;font-weight:500}
+canvas{display:block;margin:16px auto 0}
+.spin-btn{display:block;margin:12px auto 0;padding:9px 32px;font-size:14px;font-weight:500;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer}
+.spin-btn:hover{background:#f5f5f3}
+.assign-row{padding:7px 12px;background:#fafafa;border:1px solid #e5e5e5;border-radius:8px;font-size:14px;display:flex;align-items:center;gap:8px}
+.assign-name{color:#666;min-width:48px}
+.assign-task{font-weight:500;color:#1a1a1a}
+.group-block{margin-bottom:14px}
+.group-title{font-size:13px;font-weight:500;color:#666;margin-bottom:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>抽籤工具</h1>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('task')">任務</div>
+    <div class="tab" onclick="switchTab('number')">數字</div>
+    <div class="tab" onclick="switchTab('order')">順序</div>
+    <div class="tab" onclick="switchTab('wheel')">輪盤</div>
+  </div>
+
+  <!-- 任務 -->
+  <div class="panel active" id="p-task">
+    <div class="card">
+      <div class="segrow">
+        <div class="seg on" id="seg-single" onclick="setTaskMode('single')">單一任務</div>
+        <div class="seg" id="seg-group" onclick="setTaskMode('group')">分組</div>
+      </div>
+      <div id="task-single">
+        <div class="label">任務清單（每行一項）</div>
+        <textarea id="task-list" placeholder="表單－建立、發送群組訊息、提醒結單&#10;蛋糕－訂購、取貨&#10;餐點－統整品項數量、訂購事宜&#10;飲料－統整品項數量、訂購事宜&#10;發票－收付款、整理票據、請款"></textarea>
+        <div class="label">參與者（每行一名）</div>
+        <textarea id="task-names" placeholder="小明&#10;小華&#10;小美"></textarea>
+      </div>
+      <div id="task-group" style="display:none">
+        <div class="label">參與者（每行一名）</div>
+        <textarea id="group-names" placeholder="小明&#10;小華&#10;小美&#10;大衛"></textarea>
+        <div class="row" style="margin-top:12px">
+          <div>
+            <div class="label">組數</div>
+            <input type="number" id="group-count" min="2" max="20" value="2">
+          </div>
+          <div>
+            <div class="label">組名（選填，逗號分隔）</div>
+            <input type="text" id="group-labels" placeholder="表單組,訂餐組,拿餐組">
+          </div>
+        </div>
+      </div>
+      <button class="go" onclick="runTask()">開始抽籤</button>
+    </div>
+    <div class="result-box">
+      <div class="result-label">結果</div>
+      <div id="res-task-text" class="result-empty">尚未抽籤</div>
+    </div>
+  </div>
+
+  <!-- 數字 -->
+  <div class="panel" id="p-number">
+    <div class="card">
+      <div class="segrow">
+        <div class="seg on" id="seg-vs" onclick="setNumMode('vs')">比大小</div>
+        <div class="seg" id="seg-amt" onclick="setNumMode('amt')">金額／數量</div>
+      </div>
+      <div id="num-vs">
+        <div class="label">參與者（每行一名）</div>
+        <textarea id="vs-names" placeholder="小明&#10;小華&#10;小美"></textarea>
+        <div class="row" style="margin-top:12px">
+          <div>
+            <div class="label">最小值</div>
+            <input type="number" id="vs-min" value="1">
+          </div>
+          <div>
+            <div class="label">最大值</div>
+            <input type="number" id="vs-max" value="100">
+          </div>
+        </div>
+        <div style="margin-top:10px">
+          <label style="font-size:13px;color:#666;display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="vs-unique" checked> 每人抽到不同數字
+          </label>
+        </div>
+      </div>
+      <div id="num-amt" style="display:none">
+        <div class="label">總金額 / 數量</div>
+        <input type="number" id="amt-total" value="10000">
+        <div class="label">參與者（每行一名）</div>
+        <textarea id="amt-names" placeholder="小明&#10;小華&#10;小美"></textarea>
+      </div>
+      <button class="go" onclick="runNumber()">開始抽籤</button>
+    </div>
+    <div class="result-box">
+      <div class="result-label">結果</div>
+      <div id="res-number-text" class="result-empty">尚未抽籤</div>
+    </div>
+  </div>
+
+  <!-- 順序 -->
+  <div class="panel" id="p-order">
+    <div class="card">
+      <div class="label" style="margin-top:0">參與者（每行一名）</div>
+      <textarea id="order-names" placeholder="小明&#10;小華&#10;小美&#10;大衛"></textarea>
+      <button class="go" onclick="runOrder()">隨機排順序</button>
+    </div>
+    <div class="result-box">
+      <div class="result-label">結果</div>
+      <div id="res-order-text" class="result-empty">尚未抽籤</div>
+    </div>
+  </div>
+
+  <!-- 輪盤 -->
+  <div class="panel" id="p-wheel">
+    <div class="card">
+      <div class="label" style="margin-top:0">方向數（2–12）</div>
+      <input type="number" id="wheel-dirs" min="2" max="12" value="4" oninput="drawWheel()">
+      <div class="label">區塊標籤（選填，逗號分隔）</div>
+      <input type="text" id="wheel-labels" placeholder="東,西,南,北" oninput="drawWheel()">
+      <canvas id="wheelCanvas" width="260" height="260"></canvas>
+      <button class="spin-btn" onclick="spinWheel()">旋轉</button>
+    </div>
+    <div class="result-box">
+      <div class="result-label">結果</div>
+      <div id="res-wheel-text" class="result-empty">尚未旋轉</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let taskMode='single', numMode='vs';
+
+function switchTab(t){
+  const keys=['task','number','order','wheel'];
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',keys[i]===t));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('p-'+t).classList.add('active');
+  if(t==='wheel') drawWheel();
+}
+
+function setTaskMode(m){
+  taskMode=m;
+  document.getElementById('seg-single').classList.toggle('on',m==='single');
+  document.getElementById('seg-group').classList.toggle('on',m==='group');
+  document.getElementById('task-single').style.display=m==='single'?'block':'none';
+  document.getElementById('task-group').style.display=m==='group'?'block':'none';
+}
+
+function setNumMode(m){
+  numMode=m;
+  document.getElementById('seg-vs').classList.toggle('on',m==='vs');
+  document.getElementById('seg-amt').classList.toggle('on',m==='amt');
+  document.getElementById('num-vs').style.display=m==='vs'?'block':'none';
+  document.getElementById('num-amt').style.display=m==='amt'?'block':'none';
+}
+
+function parseLines(id){
+  return document.getElementById(id).value.split('\n').map(s=>s.trim()).filter(Boolean);
+}
+
+function shuffle(arr){
+  let a=[...arr];
+  for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+function runTask(){
+  const box=document.getElementById('res-task-text');
+  if(taskMode==='single'){
+    const tasks=parseLines('task-list');
+    const names=parseLines('task-names');
+    if(!tasks.length||!names.length){box.innerHTML='<span class="result-empty">請填寫任務與參與者</span>';return;}
+    const shuffledTasks=shuffle(tasks);
+    let html='<div style="display:flex;flex-direction:column;gap:6px">';
+    names.forEach((n,i)=>{
+      const task=shuffledTasks[i%shuffledTasks.length];
+      html+=`<div class="assign-row"><span class="assign-name">${n}</span><span style="color:#bbb;padding:0 4px">→</span><span class="assign-task">${task}</span></div>`;
+    });
+    html+='</div>';
+    box.innerHTML=html;
+  } else {
+    const names=parseLines('group-names');
+    const count=parseInt(document.getElementById('group-count').value)||2;
+    const rawLabels=document.getElementById('group-labels').value;
+    const labels=rawLabels?rawLabels.split(',').map(s=>s.trim()):[];
+    if(!names.length){box.innerHTML='<span class="result-empty">請填寫參與者</span>';return;}
+    const shuffled=shuffle(names);
+    const groups=Array.from({length:count},()=>[]);
+    shuffled.forEach((n,i)=>groups[i%count].push(n));
+    let html='';
+    groups.forEach((g,i)=>{
+      const label=labels[i]||`第${i+1}組`;
+      html+=`<div class="group-block"><div class="group-title">${label}</div><div class="chip-row">`;
+      g.forEach(n=>{html+=`<div class="chip">${n}</div>`;});
+      html+='</div></div>';
+    });
+    box.innerHTML=html||'<span class="result-empty">人數不足</span>';
+  }
+}
+
+function runNumber(){
+  const box=document.getElementById('res-number-text');
+  if(numMode==='vs'){
+    const names=parseLines('vs-names');
+    const min=parseInt(document.getElementById('vs-min').value)||1;
+    const max=parseInt(document.getElementById('vs-max').value)||100;
+    const unique=document.getElementById('vs-unique').checked;
+    if(!names.length){box.innerHTML='<span class="result-empty">請填寫參與者</span>';return;}
+    if(min>=max){box.innerHTML='<span class="result-empty">最小值需小於最大值</span>';return;}
+    let pool=[];
+    if(unique){
+      const range=max-min+1;
+      if(names.length>range){box.innerHTML='<span class="result-empty">範圍不夠，請擴大數字範圍</span>';return;}
+      pool=shuffle(Array.from({length:range},(_,i)=>i+min)).slice(0,names.length);
+    } else {
+      pool=names.map(()=>Math.floor(Math.random()*(max-min+1))+min);
+    }
+    const results=names.map((n,i)=>({name:n,val:pool[i]})).sort((a,b)=>b.val-a.val);
+    const top=results[0].val;
+    let html='<div class="chip-row">';
+    results.forEach((r,i)=>{
+      const isWin=r.val===top;
+      html+=`<div class="chip${isWin?' win':''}">${r.name} <strong>${r.val}</strong>${i===0?' 👑':''}</div>`;
+    });
+    html+='</div>';
+    box.innerHTML=html;
+  } else {
+    const total=parseFloat(document.getElementById('amt-total').value)||0;
+    const names=parseLines('amt-names');
+    if(!names.length||!total){box.innerHTML='<span class="result-empty">請填寫總金額與參與者</span>';return;}
+    const cuts=Array.from({length:names.length-1},()=>Math.random()).sort((a,b)=>a-b);
+    const fracs=[...cuts,1].map((v,i,a)=>v-(i?a[i-1]:0));
+    let html='<div style="display:flex;flex-direction:column;gap:6px">';
+    names.forEach((n,i)=>{
+      const amt=Math.round(fracs[i]*total);
+      html+=`<div class="assign-row"><span class="assign-name">${n}</span><span style="color:#bbb;padding:0 4px">→</span><span class="assign-task">${amt.toLocaleString()}</span></div>`;
+    });
+    html+='</div>';
+    box.innerHTML=html;
+  }
+}
+
+function runOrder(){
+  const names=parseLines('order-names');
+  const box=document.getElementById('res-order-text');
+  if(!names.length){box.innerHTML='<span class="result-empty">請填寫參與者</span>';return;}
+  const shuffled=shuffle(names);
+  let html='<div style="display:flex;flex-direction:column;gap:6px">';
+  shuffled.forEach((n,i)=>{
+    html+=`<div class="assign-row"><span class="assign-name" style="color:#aaa;min-width:36px">第 ${i+1}</span><span class="assign-task">${n}</span></div>`;
+  });
+  html+='</div>';
+  box.innerHTML=html;
+}
+
+const RAMP=['#7F77DD','#1D9E75','#D85A30','#378ADD','#D4537E','#BA7517','#639922','#E24B4A','#888780','#534AB7','#0F6E56','#993C1D'];
+let wheelAngle=0, spinning=false;
+
+function drawWheel(extraAngle){
+  const canvas=document.getElementById('wheelCanvas');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const n=Math.max(2,Math.min(12,parseInt(document.getElementById('wheel-dirs').value)||4));
+  const rawLabels=document.getElementById('wheel-labels').value;
+  const labels=rawLabels?rawLabels.split(',').map(s=>s.trim()):[];
+  const cx=130,cy=130,r=110;
+  ctx.clearRect(0,0,260,260);
+  const rot=extraAngle!==undefined?extraAngle:wheelAngle;
+  for(let i=0;i<n;i++){
+    const start=rot+i*(2*Math.PI/n)-Math.PI/2;
+    const end=start+2*Math.PI/n;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,start,end);ctx.closePath();
+    ctx.fillStyle=RAMP[i%RAMP.length];ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+    const mid=start+(end-start)/2;
+    ctx.fillStyle='#fff';ctx.font='500 13px -apple-system,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(labels[i]||(i+1),cx+Math.cos(mid)*(r*0.65),cy+Math.sin(mid)*(r*0.65));
+  }
+  ctx.beginPath();ctx.arc(cx,cy,14,0,2*Math.PI);ctx.fillStyle='#fff';ctx.fill();
+  ctx.strokeStyle='#ddd';ctx.lineWidth=1;ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx,10);ctx.lineTo(cx-8,26);ctx.lineTo(cx+8,26);ctx.closePath();
+  ctx.fillStyle='#1a1a1a';ctx.fill();
+}
+
+function spinWheel(){
+  if(spinning)return;
+  spinning=true;
+  const n=Math.max(2,Math.min(12,parseInt(document.getElementById('wheel-dirs').value)||4));
+  const rawLabels=document.getElementById('wheel-labels').value;
+  const labels=rawLabels?rawLabels.split(',').map(s=>s.trim()):[];
+  const totalRot=Math.PI*2*8+Math.random()*Math.PI*2;
+  const dur=3000;
+  const start=performance.now();
+  const startAngle=wheelAngle;
+  function frame(now){
+    const t=Math.min((now-start)/dur,1);
+    const ease=1-Math.pow(1-t,4);
+    drawWheel(startAngle+totalRot*ease);
+    if(t<1){requestAnimationFrame(frame);}
+    else{
+      wheelAngle=(startAngle+totalRot)%(2*Math.PI);
+      spinning=false;
+      const idx=Math.floor(((-wheelAngle+Math.PI/2+2*Math.PI)%(2*Math.PI))/(2*Math.PI/n))%n;
+      document.getElementById('res-wheel-text').innerHTML=`<span style="font-size:22px;font-weight:500">→ ${labels[idx]||(idx+1)}</span>`;
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+window.addEventListener('load',()=>{if(document.getElementById('wheelCanvas'))drawWheel();});
+</script>
+</body>
+</html>
